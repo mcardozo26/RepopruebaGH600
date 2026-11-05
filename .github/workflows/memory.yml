@@ -11,6 +11,11 @@ on:
           - remember
           - recall
  
+      phrase:
+        description: Phrase to remember
+        required: false
+        type: string
+ 
 permissions:
   contents: read
   issues: write
@@ -22,26 +27,8 @@ jobs:
     runs-on: ubuntu-latest
  
     steps:
-      - name: Install GitHub Copilot CLI
-        run: |
-          npm install -g @github/copilot
- 
-      - name: Generate phrase with Copilot
-        id: phrase
-        env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-        run: |
-          PHRASE=$(copilot -p \
-            "Inventar una frase corta e inaginativa. Devovler la frase sin acotar nada mas")
- 
-          echo "Generated phrase:"
-          echo "$PHRASE"
- 
-          {
-            echo "phrase<<EOF"
-            echo "$PHRASE"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+      - name: Checkout repository
+        uses: actions/checkout@v4
  
       - name: Find existing memory Issue
         id: memory
@@ -60,7 +47,7 @@ jobs:
         if: ${{ steps.memory.outputs.issue_number == '' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          PHRASE: ${{ steps.phrase.outputs.phrase }}
+          PHRASE: ${{ inputs.phrase }}
         run: |
           gh issue create \
             --title "Agent Memory" \
@@ -80,7 +67,7 @@ jobs:
         if: ${{ steps.memory.outputs.issue_number != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          PHRASE: ${{ steps.phrase.outputs.phrase }}
+          PHRASE: ${{ inputs.phrase }}
           ISSUE_NUMBER: ${{ steps.memory.outputs.issue_number }}
         run: |
           gh issue edit "$ISSUE_NUMBER" \
@@ -105,6 +92,9 @@ jobs:
     runs-on: ubuntu-latest
  
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+ 
       - name: Find memory Issue
         id: memory
         env:
